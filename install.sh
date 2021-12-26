@@ -10,6 +10,7 @@ url-installer() {
     echo "https://raw.githubusercontent.com/MarioWi/MultiCraft-JAR-Conf/master"
 }
 
+path_to_confs="minecraft"
 listServer="vanilla spigot paperspigot custom"
 
 run() {
@@ -46,7 +47,7 @@ run() {
     #read -rsp "Press any key to continue..." -n1 key
 
     log INFO "server CHOOSEN: $choicesSrv" "$output"
-    servers="$(extract-choosed-servers "$choicesSrv" "./versions.csv")"
+    servers="$(extract-choosed-servers "$choicesSrv" "versions.csv")"
     #log INFO "GENERATED LINES: $lines" "$output"
 
     #printf '%s\n' "$servers"
@@ -63,11 +64,15 @@ run() {
     #printf '%s\n' "$choicesVersions"
     #read -rsp "Press any key to continue..." -n1 key
 
-    extract-choosed-versions "./versions.csv" "./choosedVersions.csv"
+    extract-choosed-versions "versions.csv" "choosedVersions.csv"
 
     dialog-choose-user "user"
 
     dialog-choose-rights "rights"
+
+    install_choosed_versions "choosedVersions.csv"
+
+    rm choosedVersions.csv && rm user && rm rights
 
 }
 
@@ -92,8 +97,12 @@ download-file(){
 }
 
 install-dialog() {
-    sudo apt-get update -y && sudo apt-get upgrade -y
-    sudo apt-get install dialog -y
+
+    command -v "dialog" >/dev/null 2>&1
+    if [[ $? -ne 0 ]]; then
+        sudo apt-get update -y && sudo apt-get upgrade -y
+        sudo apt-get install dialog -y
+    fi
 }
 
 dialog-welcome() {
@@ -110,6 +119,10 @@ dialog-choose-server(){
         "custom" "Custom" off)
 
     dialog --checklist "You can now choose the groups of Server/APIs you want to install, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${server[@]}" 2> "$file"
+
+    if [ ! $exitstatus = 0 ]; then
+        exit 1
+    fi
 }
 
 extract-choosed-servers(){
@@ -133,7 +146,7 @@ dialog-choose-versions(){
         unset array[@]
         i=1 #Index counter for adding to array
         j=1 #Option menu value generator
-        
+
         #printf '%s\n' "$srv"
         #read -rsp "Press any key to continue..." -n1 key
 
@@ -159,6 +172,10 @@ dialog-choose-versions(){
 
         #dialog --title "$srv" --checklist "You can now choose the groups of Versions you want to install for $srv, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${array[@]}" 2>> "$file"
         dialog --title "$srv" --checklist "You can now choose the groups of Versions you want to install for $srv, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${array[@]}" 2> "$srv"
+
+    if [ ! $exitstatus = 0 ]; then
+            exit 1
+        fi
 
     done
 }
@@ -207,12 +224,40 @@ dialog-choose-user(){
         "nobody" "nobody:users (Unraid-Docker)" off
         "custom" "Custom" off)
 
-    dialog --radiolist "You can now choose the groups of Server/APIs you want to install, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${user[@]}" 2> "$file"
+    dialog --radiolist "You can now select the group and the user who should own the conf files." 0 0 0 "${user[@]}" 2> "$file"
 
-    printf '%s\n' "LinesVers: $linesVers"
-    read -rsp "Press any key to continue..." -n1 key
+    if [ ! $exitstatus = 0 ]; then
+        exit 1
+    fi
 
-} 
+    choice=$(cat  $file)
+    #if [ "$choice" = "custom" ]; then
+    #    dialog-insert-user "user"
+    #fi
+    case "$choice" in
+
+        minecraft) echo -n "minecraft:minecraft" > "$file" ;;
+
+        nobody) echo -n "nobody:users" > "$file" ;;
+
+        custom) dialog-insert-user "user" ;;
+
+        *) echo "Sorry, invalid input" ;;
+    esac
+    #printf '%s\n' "LinesVers: $linesVers"
+    #read -rsp "Press any key to continue..." -n1 key
+
+}
+
+dialog-insert-user(){
+    local file="${1:?}"
+
+    dialog --inputbox "You can now enter the group and the user who should own the conf files." 0 0 "group:user" 2> "$file"
+
+    if [ ! $exitstatus = 0 ]; then
+        exit 1
+    fi
+}
 
 dialog-choose-rights(){
     local file="${1:?}"
@@ -222,13 +267,47 @@ dialog-choose-rights(){
         "777" "rwxrwxrwx" off
         "custom" "Custom" off)
 
-    dialog --radiolist "You can now choose the groups of Server/APIs you want to install, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${rights[@]}" 2> "$file"
+    dialog --radiolist "You can now select the rights to be set for the conf files." 0 0 0 "${rights[@]}" 2> "$file"
 
-    printf '%s\n' "LinesVers: $linesVers"
+    if [ ! $exitstatus = 0 ]; then
+        exit 1
+    fi
+
+    choice=$(cat  $file)
+    if [ "$choice" = "custom" ]; then
+        dialog-insert-rights "rights"
+    fi
+
+    #printf '%s\n' "LinesVers: $linesVers"
+    #read -rsp "Press any key to continue..." -n1 key
+
+}
+
+dialog-insert-rights(){
+    local file="${1:?}"
+
+    dialog --inputbox "You can now enter the rights which should be set on the conf files.\nGroupUserOther" 0 0 "GUO" 2> "$file"
+
+    if [ ! $exitstatus = 0 ]; then
+        exit 1
+    fi
+
+}
+
+install_choosed_versions(){
+    local -r versions=${1:?}
+
+    while IFS="," read -r server version java confVersion
+    do
+        wget -N -P ./jar "$(url-installer)/$path_to_confs/$server/$server-$version.jar.conf"
+        #chown minecraft:minecraft ./jar/spigot-1.16.2.jar.conf
+        #chmod 755 ./jar/spigot-1.16.2.jar.conf
+    done < "$versions"
+    # ignore header line
+    #done < <(tail -n +2 $versions)
+
+    printf '%s\n' "Install?..."
     read -rsp "Press any key to continue..." -n1 key
-
-} 
-
-
+}
 
 run "$@"
