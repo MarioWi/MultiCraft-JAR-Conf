@@ -297,9 +297,14 @@ dialog-insert-rights(){
 install_choosed_versions(){
     local -r versions=${1:?}
 
+    user=$(cat user)
+    rights=$(cat rights)
+ 
     while IFS="," read -r server version java confVersion
     do
         wget -N -P ./jar "$(url-installer)/$path_to_confs/$server/$server-$version.jar.conf"
+        sudo chown $user "./jar/$server-$version.jar.conf"
+        sudo chmod $rights "./jar/$server-$version.jar.conf"
         #chown minecraft:minecraft ./jar/spigot-1.16.2.jar.conf
         #chmod 755 ./jar/spigot-1.16.2.jar.conf
     done < "$versions"
