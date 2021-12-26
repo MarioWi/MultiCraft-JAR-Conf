@@ -3,16 +3,17 @@
 # e - script stops on error
 # u - error if undefined variable
 # o pipefail - script fails if command piped fails
-set -euo pipefail
+#set -euo pipefail
 
 # YOU NEED TO MODIFY YOUR INSTALL URL
 url-installer() {
     echo "https://raw.githubusercontent.com/MarioWi/MultiCraft-JAR-Conf/master"
 }
 
+listServer="vanilla spigot paperspigot custom"
 
 run() {
-       local dry_run=${dry_run:-false}
+    local dry_run=${dry_run:-false}
     local output=${output:-/dev/tty2}
 
     while getopts d:o: option
@@ -32,6 +33,7 @@ run() {
     dialog-welcome
 
     check-file "versions.csv"
+    versions_path="$(url-installer)/versions.csv"
     #log INFO "DOWNLOAD VERSIONS CSV" "$output"
     #versions_path="$(download-versions-csv "$versions_url")"
     #log INFO "VERSIONS CSV DOWNLOADED AT: $versions_path" "$output"
@@ -39,8 +41,33 @@ run() {
 
     dialog-choose-server srv
     choicesSrv=$(cat srv) && rm srv
+
+    #printf '%s\n' "$choicesSrv"
+    #read -rsp "Press any key to continue..." -n1 key
+
     log INFO "server CHOOSEN: $choicesSrv" "$output"
-    lines="$(extract-choosed-servers "$choices" "$versions_path")"
+    servers="$(extract-choosed-servers "$choicesSrv" "./versions.csv")"
+    #log INFO "GENERATED LINES: $lines" "$output"
+
+    #printf '%s\n' "$servers"
+    #read -rsp "Press any key to continue..." -n1 key
+
+    dialog-choose-versions "vers" "$choicesSrv" "$servers"
+
+    #printf '%s\n' "$vers"
+    #read -rsp "Press any key to continue..." -n1 key
+
+    #choicesVersions=$(cat vers) && rm vers
+    #log INFO "server CHOOSEN: $choicesSrv" "$output"
+
+    #printf '%s\n' "$choicesVersions"
+    #read -rsp "Press any key to continue..." -n1 key
+
+    extract-choosed-versions "./versions.csv" "./choosedVersions.csv"
+
+    dialog-choose-user "user"
+
+    dialog-choose-rights "rights"
 
 }
 
@@ -54,17 +81,18 @@ log() {
 }
 
 check-file(){
-    if [ ! -f ${1:?} ] then
+    if [ ! -f ${1:?} ]
+    then
         download-file "$1"
     fi
 }
 
 download-file(){
-    curl "$url_installer/$1" > "./$1"
+    curl "$(url-installer)/$1" > "./$1"
 }
 
 install-dialog() {
-    sudo apt-get update && sudo apt-get upgrade
+    sudo apt-get update -y && sudo apt-get upgrade -y
     sudo apt-get install dialog -y
 }
 
@@ -72,15 +100,135 @@ dialog-welcome() {
     dialog --title "Welcome!" --msgbox "Welcome to MarioWi's Multicraft JAR-Conf downloader.\n" 10 60
 }
 
-dialog-chose-server(){
+dialog-choose-server(){
     local file=${1:?}
 
     server=(
-        "vanilla" "Vanilla" on 
+        "vanilla" "Vanilla" on
         "spigot" "Spigot" on
         "paperspigot" "PaperSpigot" on
         "custom" "Custom" off)
 
-    dialog --checklist "You can now choose the groups of Server/APIs you want to install, according to your own CSV file.\n\n Press SPACE to select and ENTER to validate your choices." 0 0 0 "${server[@]}" 2> "$file"
+    dialog --checklist "You can now choose the groups of Server/APIs you want to install, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${server[@]}" 2> "$file"
 }
 
+extract-choosed-servers(){
+    local -r choices=${1:?}
+    local -r versions_path=${2:?}
+
+    selection="^$(echo $choices | sed -e 's/ /,|^/g'),"
+    lines=$(grep -E "$selection" "$versions_path")
+
+    echo "$lines"
+}
+
+dialog-choose-versions(){
+    local file="${1:?}"
+    local -r choices="${2:?}"
+    local -r servers="${3:?}"
+
+    array=()
+
+    for srv in $choices; do
+        unset array[@]
+        i=1 #Index counter for adding to array
+        j=1 #Option menu value generator
+        
+        #printf '%s\n' "$srv"
+        #read -rsp "Press any key to continue..." -n1 key
+
+        selection="^$(echo $srv | sed -e 's/ /,|^/g'),"
+        lines=$(echo "$servers" | grep -w "$srv")
+        for k in $lines; do
+            version=$(echo $k | awk -F ',' '{print $2;}')
+            array[ $i ]=$version
+        	(( j++ ))
+            if [[ "$srv" == "custom" ]]; then
+                array[ $i + 1]=$version.jar.conf
+            else
+                array[ $i + 1]=$srv-$version.jar.conf
+            fi
+            array[ ($i + 2) ]=$srv-$version
+            (( i=($i+3) ))
+        done
+
+        #printf '%s\n' "${array[@]}"
+        ##printf '%s\n' "$lines"
+        ##printf '%s\n' "$RADIOLIST"
+        #read -rsp "Press any key to continue..." -n1 key
+
+        #dialog --title "$srv" --checklist "You can now choose the groups of Versions you want to install for $srv, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${array[@]}" 2>> "$file"
+        dialog --title "$srv" --checklist "You can now choose the groups of Versions you want to install for $srv, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${array[@]}" 2> "$srv"
+
+    done
+}
+
+extract-choosed-versions(){
+    local -r versions_path=${1:?}
+    local file="${2:?}"
+
+    for servers in $listServer; do
+        #printf '%s\n' "Server: $servers"
+        #read -rsp "Press any key to continue..." -n1 key
+
+        if test -f "$servers"; then
+            for server in servers; do
+                versions=$(cat  $servers)
+
+                #printf '%s\n' "Versions: $versions"
+                #read -rsp "Press any key to continue..." -n1 key
+
+                selectionSrv="^$(echo $servers | sed -e 's/ /,|^/g'),"
+                linesSrv=$(grep -E "$selectionSrv" "$versions_path")
+
+                #printf '%s\n' "SelectionSrv: $selectionSrv"
+                #printf '%s\n' "LinesSrv: $linesSrv"
+                #read -rsp "Press any key to continue..." -n1 key
+
+                selectionVers="$(echo $versions | sed -e 's/ /,|/g'),"
+                linesVers=$(echo "$linesSrv" | grep -E "$selectionVers")
+                echo "$linesVers" >> $file
+
+                #printf '%s\n' "SelectionVers: $selectionVers"
+                #printf '%s\n' "LinesVers: $linesVers"
+                #read -rsp "Press any key to continue..." -n1 key
+                rm $servers
+            done
+        fi
+    done
+
+}
+
+dialog-choose-user(){
+    local file="${1:?}"
+    #"user"
+    user=(
+        "minecraft" "minecraft:minecraft (Standard)" on
+        "nobody" "nobody:users (Unraid-Docker)" off
+        "custom" "Custom" off)
+
+    dialog --radiolist "You can now choose the groups of Server/APIs you want to install, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${user[@]}" 2> "$file"
+
+    printf '%s\n' "LinesVers: $linesVers"
+    read -rsp "Press any key to continue..." -n1 key
+
+} 
+
+dialog-choose-rights(){
+    local file="${1:?}"
+    #"rights"
+    rights=(
+        "755" "r xr xr x" on
+        "777" "rwxrwxrwx" off
+        "custom" "Custom" off)
+
+    dialog --radiolist "You can now choose the groups of Server/APIs you want to install, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${rights[@]}" 2> "$file"
+
+    printf '%s\n' "LinesVers: $linesVers"
+    read -rsp "Press any key to continue..." -n1 key
+
+} 
+
+
+
+run "$@"
