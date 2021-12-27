@@ -29,6 +29,8 @@ run() {
 
     log INFO "DRY RUN? $dry_run" "$output"
 
+    check_sudo
+
     install-dialog
 
     dialog-welcome
@@ -69,6 +71,13 @@ log() {
     local -r timestamp=$(date +"%Y-%m-%d %H:%M:%S")
 
     echo -e "${timestamp} [${level}] ${message}" >>"$output"
+}
+
+check_sudo(){
+    if [[ $EUID -ne 0 ]]; then
+        echo "This script must be run as root" 
+        exit 1
+    fi
 }
 
 check-file(){
@@ -142,16 +151,50 @@ dialog-choose-versions(){
         for k in $lines; do
             version=$(echo $k | awk -F ',' '{print $2;}')
             array[ $i ]=$version
-            if [[ "$srv" == "custom" ]]; then
-                array[ $i + 1]=$version.jar.conf
+            # check if jar installed
+            if [ ! -f "./jar/$srv-$version.jar" ]; then
+                # check if conf installed
+                if [ ! -f "./jar/$srv-$version.jar.conf" ]; then
+                    if [[ "$srv" == "custom" ]]; then
+                        array[ $i + 1]=$version.jar.conf
+                    else
+                        array[ $i + 1]=$srv-$version.jar.conf
+                    fi
+                    array[ ($i + 2) ]=off
+                else
+                    if [[ "$srv" == "custom" ]]; then
+                        array[ $i + 1]="$version.jar.conf (conf existing)"
+                    else
+                        array[ $i + 1]="$srv-$version.jar.conf (conf existing)"
+                    fi
+                    array[ ($i + 2) ]=off
+                fi
             else
-                array[ $i + 1]=$srv-$version.jar.conf
+                if [ ! -f "./jar/$srv-$version.jar.conf" ]; then
+                    if [[ "$srv" == "custom" ]]; then
+                        array[ $i + 1]="$version.jar.conf (jar existing)"
+                    else
+                        array[ $i + 1]="$srv-$version.jar.conf (jar existing)"
+                    fi
+                    array[ ($i + 2) ]=on
+                else
+                    if [[ "$srv" == "custom" ]]; then
+                        array[ $i + 1]="$version.jar.conf (jar & conf existing)"
+                    else
+                        array[ $i + 1]="$srv-$version.jar.conf (jar & conf existing)"
+                    fi
+                    array[ ($i + 2) ]=off
+                fi
             fi
-            array[ ($i + 2) ]=$srv-$version
             (( i=($i+3) ))
         done
 
         dialog --title "$srv" --checklist "You can now choose the groups of Versions you want to install for $srv, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${array[@]}" 2> "$srv"
+        versions=$(cat $srv)
+        if [ "$versions" = "" ]; then
+            rm $srv
+        fi
+
         log INFO "VERSIONS CHOOSEN FOR: $srv" "$output"
 
         exitstatus=$?
@@ -282,6 +325,8 @@ install_choosed_versions(){
             log INFO "WGET: --> $wgetOut" "$output"
             log INFO "CHOWN: --> $chownOut" "$output"
             log INFO "CHMOD: --> $chmodOut" "$output"
+            #
+            sed -i -E "s|^configSource\s=\s(\S*)|configSource = $(url-installer)/$path_to_confs/$server/$server-$version.jar.conf|" "./jar/$server-$version.jar.conf"
         else
             fake_install "$server-$version.jar.conf"
         fi
@@ -296,7 +341,9 @@ fake-install() {
 
 cleanup(){
     log INFO "FINAL CLEANUP" "$output"
-    rm choosedVersions.csv && rm user && rm rights
+    rm choosedVersions.csv > /dev/null 2>&1
+    rm user > /dev/null 2>&1
+    rm rights > /dev/null 2>&1
 }
 
 run "$@"
