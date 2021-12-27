@@ -58,9 +58,12 @@ run() {
     dialog-choose-rights "rights"
 
     log INFO "INSTALL CHOOSED VERSIONS" "$output"
+    dialog-install-confs
     install_choosed_versions "choosedVersions.csv"
 
     cleanup
+
+    dialog-installed
 
 }
 
@@ -310,6 +313,10 @@ dialog-insert-rights(){
 
 }
 
+dialog-install-confs() {
+    dialog --title "Let's go!" --msgbox "The choosed confs will now be installed." 13 60
+}
+
 install_choosed_versions(){
     local -r versions=${1:?}
 
@@ -344,6 +351,10 @@ cleanup(){
     rm choosedVersions.csv > /dev/null 2>&1
     rm user > /dev/null 2>&1
     rm rights > /dev/null 2>&1
+}
+
+dialog-installed() {
+    dialog --title "congratulation" --msgbox "Everything is installed." 13 60
 }
 
 run "$@"
