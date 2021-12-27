@@ -3,7 +3,7 @@
 # e - script stops on error
 # u - error if undefined variable
 # o pipefail - script fails if command piped fails
-set -euo pipefail
+#set -euo pipefail
 
 # YOU NEED TO MODIFY YOUR INSTALL URL
 url-installer() {
@@ -47,7 +47,6 @@ run() {
     log INFO "CHOOSE VERSIONS" "$output"
     dialog-choose-versions "vers" "$choicesSrv" "$servers"
 
-    log INFO "VERSIONS CHOOSEN: $choicesSrv" "$output"
     extract-choosed-versions "versions.csv" "choosedVersions.csv"
 
     log INFO "CHOOSE GROUP:USER" "$output"
@@ -137,14 +136,12 @@ dialog-choose-versions(){
     for srv in $choices; do
         unset array[@]
         i=1 #Index counter for adding to array
-        j=1 #Option menu value generator
 
         selection="^$(echo $srv | sed -e 's/ /,|^/g'),"
         lines=$(echo "$servers" | grep -w "$srv")
         for k in $lines; do
             version=$(echo $k | awk -F ',' '{print $2;}')
             array[ $i ]=$version
-        	(( j++ ))
             if [[ "$srv" == "custom" ]]; then
                 array[ $i + 1]=$version.jar.conf
             else
@@ -155,6 +152,7 @@ dialog-choose-versions(){
         done
 
         dialog --title "$srv" --checklist "You can now choose the groups of Versions you want to install for $srv, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${array[@]}" 2> "$srv"
+        log INFO "VERSIONS CHOOSEN FOR: $srv" "$output"
 
         exitstatus=$?
         if [ ! $exitstatus = 0 ]; then
@@ -274,13 +272,16 @@ install_choosed_versions(){
 
     user=$(cat user)
     rights=$(cat rights)
- 
+
     while IFS="," read -r server version java confVersion
     do
         if [ "$dry_run" = false ]; then
-            wget -N -P ./jar "$(url-installer)/$path_to_confs/$server/$server-$version.jar.conf"
-            sudo chown $user "./jar/$server-$version.jar.conf"
-            sudo chmod $rights "./jar/$server-$version.jar.conf"
+            wgetOut=$(wget -N -P ./jar "$(url-installer)/$path_to_confs/$server/$server-$version.jar.conf" 2>&1)
+            chownOut=$(sudo chown $user "./jar/$server-$version.jar.conf" 2>&1)
+            chmodOut=$(sudo chmod $rights "./jar/$server-$version.jar.conf" 2>&1)
+            log INFO "WGET: --> $wgetOut" "$output"
+            log INFO "CHOWN: --> $chownOut" "$output"
+            log INFO "CHMOD: --> $chmodOut" "$output"
         else
             fake_install "$server-$version.jar.conf"
         fi
