@@ -59,8 +59,7 @@ run() {
     log INFO "INSTALL CHOOSED VERSIONS" "$output"
     install_choosed_versions "choosedVersions.csv"
 
-    log INFO "FINAL CLEANUP" "$output"
-    rm choosedVersions.csv && rm user && rm rights
+    cleanup
 
 }
 
@@ -110,9 +109,10 @@ dialog-choose-server(){
 
     dialog --checklist "You can now choose the groups of Server/APIs you want to install, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${server[@]}" 2> "$file"
 
-    exitstatus = $ ?
+    exitstatus=$?
     if [ ! $exitstatus = 0 ]; then
         log INFO "CANCELD CHOOSE SERVER" "$output"
+        cleanup
         exit 1
     fi
 }
@@ -156,10 +156,11 @@ dialog-choose-versions(){
 
         dialog --title "$srv" --checklist "You can now choose the groups of Versions you want to install for $srv, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${array[@]}" 2> "$srv"
 
-        exitstatus = $ ?
+        exitstatus=$?
         if [ ! $exitstatus = 0 ]; then
-            exit 1
             log INFO "CANCELD CHOOSE VERSIONS" "$output"
+            cleanup
+            exit 1
         fi
 
     done
@@ -198,10 +199,11 @@ dialog-choose-user(){
 
     dialog --radiolist "You can now select the group and the user who should own the conf files." 0 0 0 "${user[@]}" 2> "$file"
 
-    exitstatus = $ ?
+    exitstatus=$?
     if [ ! $exitstatus = 0 ]; then
-        exit 1
         log INFO "CANCELD CHOOSE USER" "$output"
+        cleanup
+        exit 1
     fi
 
     choice=$(cat  $file)
@@ -223,10 +225,11 @@ dialog-insert-user(){
 
     dialog --inputbox "You can now enter the group and the user who should own the conf files." 0 0 "group:user" 2> "$file"
 
-    exitstatus = $ ?
+    exitstatus=$?
     if [ ! $exitstatus = 0 ]; then
-        exit 1
         log INFO "CANCELD INSERT USER" "$output"
+        cleanup
+        exit 1
     fi
 }
 
@@ -239,10 +242,11 @@ dialog-choose-rights(){
 
     dialog --radiolist "You can now select the rights to be set for the conf files." 0 0 0 "${rights[@]}" 2> "$file"
 
-    exitstatus = $ ?
+    exitstatus=$?
     if [ ! $exitstatus = 0 ]; then
-        exit 1
         log INFO "CANCELD CHOOSE RIGHTS" "$output"
+        cleanup
+        exit 1
     fi
 
     choice=$(cat  $file)
@@ -256,10 +260,11 @@ dialog-insert-rights(){
 
     dialog --inputbox "You can now enter the rights which should be set on the conf files.\nGroupUserOther" 0 0 "GUO" 2> "$file"
 
-    exitstatus = $ ?
+    exitstatus=$?
     if [ ! $exitstatus = 0 ]; then
-        exit 1
         log INFO "CANCELD INSERT RIGHTS" "$output"
+        cleanup
+        exit 1
     fi
 
 }
@@ -286,6 +291,11 @@ install_choosed_versions(){
 
 fake-install() {
     echo "$1 fakely installed!" >> "$output"
+}
+
+cleanup(){
+    log INFO "FINAL CLEANUP" "$output"
+    rm choosedVersions.csv && rm user && rm rights
 }
 
 run "$@"
