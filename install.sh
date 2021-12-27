@@ -106,7 +106,7 @@ install-dialog() {
 }
 
 dialog-welcome() {
-    dialog --title "Welcome!" --msgbox "Welcome to the Multicraft JAR-Conf downloader.\n" 10 60
+    dialog --backtitle "Multicraft - JAR Config" --title "Welcome!" --msgbox "Welcome to the Multicraft JAR-Conf downloader.\n" 10 60
 }
 
 dialog-choose-server(){
@@ -118,7 +118,7 @@ dialog-choose-server(){
         "paperspigot" "PaperSpigot" on
         "custom" "Custom" off)
 
-    dialog --checklist "You can now choose the groups of Server/APIs you want to install, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${server[@]}" 2> "$file"
+    dialog --backtitle "Multicraft - JAR Config" --title "Choose Server" --checklist "You can now choose the groups of Server/APIs you want to install, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${server[@]}" 2> "$file"
 
     exitstatus=$?
     if [ ! $exitstatus = 0 ]; then
@@ -192,7 +192,7 @@ dialog-choose-versions(){
             (( i=($i+3) ))
         done
 
-        dialog --title "$srv" --checklist "You can now choose the groups of Versions you want to install for $srv, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${array[@]}" 2> "$srv"
+        dialog --backtitle "Multicraft - JAR Config" --title "Choose Version for $srv" --checklist "You can now choose the groups of Versions you want to install for $srv, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${array[@]}" 2> "$srv"
         versions=$(cat $srv)
         if [ "$versions" = "" ]; then
             rm $srv
@@ -241,7 +241,7 @@ dialog-choose-user(){
         "nobody" "nobody:users (Unraid-Docker)" off
         "custom" "Custom" off)
 
-    dialog --radiolist "You can now select the group and the user who should own the conf files.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${user[@]}" 2> "$file"
+    dialog --backtitle "Multicraft - JAR Config" --title "Choose Group and User" --radiolist "You can now select the group and the user who should own the conf files.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${user[@]}" 2> "$file"
 
     exitstatus=$?
     if [ ! $exitstatus = 0 ]; then
@@ -267,7 +267,7 @@ dialog-choose-user(){
 dialog-insert-user(){
     local file="${1:?}"
 
-    dialog --inputbox "You can now enter the group and the user who should own the conf files." 0 0 "group:user" 2> "$file"
+    dialog --backtitle "Multicraft - JAR Config" --title "Insert Group and User" --inputbox "You can now enter the group and the user who should own the conf files." 0 0 "group:user" 2> "$file"
 
     exitstatus=$?
     if [ ! $exitstatus = 0 ]; then
@@ -284,7 +284,7 @@ dialog-choose-rights(){
         "777" "rwxrwxrwx" off
         "custom" "Custom" off)
 
-    dialog --radiolist "You can now select the rights to be set for the conf files.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${rights[@]}" 2> "$file"
+    dialog --backtitle "Multicraft - JAR Config" --title "Choose Rights" --radiolist "You can now select the rights to be set for the conf files.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${rights[@]}" 2> "$file"
 
     exitstatus=$?
     if [ ! $exitstatus = 0 ]; then
@@ -302,7 +302,7 @@ dialog-choose-rights(){
 dialog-insert-rights(){
     local file="${1:?}"
 
-    dialog --inputbox "You can now enter the rights which should be set on the conf files.\nGroupUserOther" 0 0 "GUO" 2> "$file"
+    dialog --backtitle "Multicraft - JAR Config" --title "Insert Rights" --inputbox "You can now enter the rights which should be set on the conf files.\nGroupUserOther" 0 0 "GUO" 2> "$file"
 
     exitstatus=$?
     if [ ! $exitstatus = 0 ]; then
@@ -314,7 +314,7 @@ dialog-insert-rights(){
 }
 
 dialog-install-confs() {
-    dialog --title "Let's go!" --msgbox "The choosed confs will now be installed." 13 60
+    dialog --backtitle "Multicraft - JAR Config" --title "Let's go!" --msgbox "The choosed confs will now be installed." 13 60
 }
 
 install_choosed_versions(){
@@ -354,7 +354,7 @@ cleanup(){
 }
 
 dialog-installed() {
-    dialog --title "congratulation" --msgbox "Everything is installed." 13 60
+    dialog --backtitle "Multicraft - JAR Config" --title "Congratulation!" --msgbox "Everything is installed." 13 60
 }
 
 run "$@"
