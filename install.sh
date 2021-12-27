@@ -323,14 +323,23 @@ install_choosed_versions(){
     while IFS="," read -r server version java confVersion
     do
         if [ "$dry_run" = false ]; then
-            wgetOut=$(wget -N -P $jar_path "$installer_url/$conf_path/$server/$server-$version.jar.conf" 2>&1)
-            chownOut=$(sudo chown $user "$jar_path/$server-$version.jar.conf" 2>&1)
-            chmodOut=$(sudo chmod $rights "$jar_path/$server-$version.jar.conf" 2>&1)
-            log INFO "WGET: --> $wgetOut" "$output"
-            log INFO "CHOWN: --> $chownOut" "$output"
-            log INFO "CHMOD: --> $chmodOut" "$output"
-            #
-            sed -i -E "s|^configSource\s=\s(\S*)|configSource = $installer_url/$conf_path/$server/$server-$version.jar.conf|" "$jar_path/$server-$version.jar.conf"
+            if [[ "$server" == "custom" ]]; then
+                wgetOut=$(wget -N -P $jar_path "$installer_url/$conf_path/$server/$version.jar.conf" 2>&1)
+                chownOut=$(sudo chown $user "$jar_path/$version.jar.conf" 2>&1)
+                chmodOut=$(sudo chmod $rights "$jar_path/$$version.jar.conf" 2>&1)
+                log INFO "WGET: --> $wgetOut" "$output"
+                log INFO "CHOWN: --> $chownOut" "$output"
+                log INFO "CHMOD: --> $chmodOut" "$output"
+                sed -i -E "s|^configSource\s=\s(\S*)|configSource = $installer_url/$conf_path/$server/$version.jar.conf|" "$jar_path/$version.jar.conf"
+            else
+                wgetOut=$(wget -N -P $jar_path "$installer_url/$conf_path/$server/$server-$version.jar.conf" 2>&1)
+                chownOut=$(sudo chown $user "$jar_path/$server-$version.jar.conf" 2>&1)
+                chmodOut=$(sudo chmod $rights "$jar_path/$server-$version.jar.conf" 2>&1)
+                log INFO "WGET: --> $wgetOut" "$output"
+                log INFO "CHOWN: --> $chownOut" "$output"
+                log INFO "CHMOD: --> $chmodOut" "$output"
+                sed -i -E "s|^configSource\s=\s(\S*)|configSource = $installer_url/$conf_path/$server/$server-$version.jar.conf|" "$jar_path/$server-$version.jar.conf"
+            fi
         else
             fake_install "$server-$version.jar.conf"
         fi
