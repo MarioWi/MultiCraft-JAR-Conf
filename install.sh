@@ -5,13 +5,8 @@
 # o pipefail - script fails if command piped fails
 #set -euo pipefail
 
-# YOU NEED TO MODIFY YOUR INSTALL URL
-url-installer() {
-    echo "https://raw.githubusercontent.com/MarioWi/MultiCraft-JAR-Conf/master"
-}
-versions_path="$(url-installer)/versions.csv"
-path_to_confs="minecraft"
-listServer="vanilla spigot paperspigot custom"
+# INCLUDES
+source ./install_config
 
 run() {
     local dry_run=${dry_run:-false}
@@ -34,6 +29,8 @@ run() {
     install-dialog
 
     dialog-welcome
+
+    check-file "install_config"
 
     check-file "versions.csv"
 
@@ -92,8 +89,8 @@ check-file(){
 }
 
 download-file(){
-    curl "$(url-installer)/$1" > "./$1"
-    log INFO "$1 DOWNLOADED AT: $(url-installer)/$1" "$output"
+    curl "$installer_url/$1" > "./$1"
+    log INFO "$1 DOWNLOADED AT: $installer_url/$1" "$output"
 }
 
 install-dialog() {
@@ -155,9 +152,9 @@ dialog-choose-versions(){
             version=$(echo $k | awk -F ',' '{print $2;}')
             array[ $i ]=$version
             # check if jar installed
-            if [ ! -f "./jar/$srv-$version.jar" ]; then
+            if [ ! -f "$jar_path/$srv-$version.jar" ]; then
                 # check if conf installed
-                if [ ! -f "./jar/$srv-$version.jar.conf" ]; then
+                if [ ! -f "$jar_path/$srv-$version.jar.conf" ]; then
                     if [[ "$srv" == "custom" ]]; then
                         array[ $i + 1]=$version.jar.conf
                     else
@@ -173,7 +170,7 @@ dialog-choose-versions(){
                     array[ ($i + 2) ]=off
                 fi
             else
-                if [ ! -f "./jar/$srv-$version.jar.conf" ]; then
+                if [ ! -f "$jar_path/$srv-$version.jar.conf" ]; then
                     if [[ "$srv" == "custom" ]]; then
                         array[ $i + 1]="$version.jar.conf (jar existing)"
                     else
@@ -326,14 +323,14 @@ install_choosed_versions(){
     while IFS="," read -r server version java confVersion
     do
         if [ "$dry_run" = false ]; then
-            wgetOut=$(wget -N -P ./jar "$(url-installer)/$path_to_confs/$server/$server-$version.jar.conf" 2>&1)
-            chownOut=$(sudo chown $user "./jar/$server-$version.jar.conf" 2>&1)
-            chmodOut=$(sudo chmod $rights "./jar/$server-$version.jar.conf" 2>&1)
+            wgetOut=$(wget -N -P $jar_path "$installer_url/$conf_path/$server/$server-$version.jar.conf" 2>&1)
+            chownOut=$(sudo chown $user "$jar_path/$server-$version.jar.conf" 2>&1)
+            chmodOut=$(sudo chmod $rights "$jar_path/$server-$version.jar.conf" 2>&1)
             log INFO "WGET: --> $wgetOut" "$output"
             log INFO "CHOWN: --> $chownOut" "$output"
             log INFO "CHMOD: --> $chmodOut" "$output"
             #
-            sed -i -E "s|^configSource\s=\s(\S*)|configSource = $(url-installer)/$path_to_confs/$server/$server-$version.jar.conf|" "./jar/$server-$version.jar.conf"
+            sed -i -E "s|^configSource\s=\s(\S*)|configSource = $installer_url/$conf_path/$server/$server-$version.jar.conf|" "$jar_path/$server-$version.jar.conf"
         else
             fake_install "$server-$version.jar.conf"
         fi
