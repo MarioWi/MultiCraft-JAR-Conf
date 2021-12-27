@@ -94,7 +94,7 @@ install-dialog() {
 }
 
 dialog-welcome() {
-    dialog --title "Welcome!" --msgbox "Welcome to MarioWi's Multicraft JAR-Conf downloader.\n" 10 60
+    dialog --title "Welcome!" --msgbox "Welcome to the Multicraft JAR-Conf downloader.\n" 10 60
 }
 
 dialog-choose-server(){
@@ -195,7 +195,7 @@ dialog-choose-user(){
         "nobody" "nobody:users (Unraid-Docker)" off
         "custom" "Custom" off)
 
-    dialog --radiolist "You can now select the group and the user who should own the conf files." 0 0 0 "${user[@]}" 2> "$file"
+    dialog --radiolist "You can now select the group and the user who should own the conf files.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${user[@]}" 2> "$file"
 
     exitstatus=$?
     if [ ! $exitstatus = 0 ]; then
@@ -238,7 +238,7 @@ dialog-choose-rights(){
         "777" "rwxrwxrwx" off
         "custom" "Custom" off)
 
-    dialog --radiolist "You can now select the rights to be set for the conf files." 0 0 0 "${rights[@]}" 2> "$file"
+    dialog --radiolist "You can now select the rights to be set for the conf files.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${rights[@]}" 2> "$file"
 
     exitstatus=$?
     if [ ! $exitstatus = 0 ]; then
