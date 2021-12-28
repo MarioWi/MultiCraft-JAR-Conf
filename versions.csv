@@ -1,3 +1,4 @@
+server,version,required Java version,version from profile
 vanilla,1.4.7,Java8J9,1
 vanilla,1.5.2,Java8J9,1
 vanilla,1.6.4,Java8J9,1
