@@ -30,6 +30,12 @@ run() {
 
     dialog-welcome
 
+    # if no install_conf download default
+    if [ ! -f "./install_config" ]; then
+        wget "https://raw.githubusercontent.com/MarioWi/MultiCraft-JAR-Conf/master/install_config"
+        source ./install_config
+    fi
+
     check-file "install_config"
 
     check-file "versions.csv"
@@ -62,6 +68,8 @@ run() {
 
     dialog-installed
 
+    clear
+
 }
 
 log() {
@@ -85,6 +93,7 @@ check-file(){
     if [ ! -f ${1:?} ]
     then
         download-file "$1"
+        log INFO "$1 DOWNLOADED" "$output"
     fi
 }
 
@@ -151,41 +160,50 @@ dialog-choose-versions(){
         for k in $lines; do
             version=$(echo $k | awk -F ',' '{print $2;}')
             array[ $i ]=$version
-            # check if jar installed
-            if [ ! -f "$jar_path/$srv-$version.jar" ]; then
-                # check if conf installed
-                if [ ! -f "$jar_path/$srv-$version.jar.conf" ]; then
-                    if [[ "$srv" == "custom" ]]; then
-                        array[ $i + 1]=$version.jar.conf
-                    else
-                        array[ $i + 1]=$srv-$version.jar.conf
-                    fi
-                    array[ ($i + 2) ]=off
-                else
-                    if [[ "$srv" == "custom" ]]; then
-                        array[ $i + 1]="$version.jar.conf (conf existing)"
-                    else
-                        array[ $i + 1]="$srv-$version.jar.conf (conf existing)"
-                    fi
-                    array[ ($i + 2) ]=off
-                fi
-            else
-                if [ ! -f "$jar_path/$srv-$version.jar.conf" ]; then
-                    if [[ "$srv" == "custom" ]]; then
-                        array[ $i + 1]="$version.jar.conf (jar existing)"
-                    else
-                        array[ $i + 1]="$srv-$version.jar.conf (jar existing)"
-                    fi
-                    array[ ($i + 2) ]=on
-                else
-                    if [[ "$srv" == "custom" ]]; then
-                        array[ $i + 1]="$version.jar.conf (jar & conf existing)"
-                    else
-                        array[ $i + 1]="$srv-$version.jar.conf (jar & conf existing)"
-                    fi
-                    array[ ($i + 2) ]=off
-                fi
-            fi
+            # check if custom server
+            if [[ "$srv" == "custom" ]]; then
+                # check if jar installed
+                if [ ! -f "$jar_path/$version.jar" ]; then
+                    # check if conf installed
+                    if [ ! -f "$jar_path/$version.jar.conf" ]; then
+						array[ $i + 1]=$version.jar.conf
+						array[ ($i + 2) ]=off
+					else
+						array[ $i + 1]="$version.jar.conf (conf existing)"
+						array[ ($i + 2) ]=off
+					fi
+				else
+                    # check if conf installed
+                    if [ ! -f "$jar_path/$version.jar.conf" ]; then
+						array[ $i + 1]="$version.jar.conf (jar existing)"
+						array[ ($i + 2) ]=on
+					else
+						array[ $i + 1]="$version.jar.conf (jar & conf existing)"
+						array[ ($i + 2) ]=off
+					fi
+				fi
+			else
+                # check if jar installed
+                if [ ! -f "$jar_path/$srv-$version.jar" ]; then
+                    # check if conf installed
+                    if [ ! -f "$jar_path/$srv-$version.jar.conf" ]; then
+						array[ $i + 1]=$srv-$version.jar.conf
+						array[ ($i + 2) ]=off
+					else
+						array[ $i + 1]="$srv-$version.jar.conf (conf existing)"
+						array[ ($i + 2) ]=off
+					fi
+				else
+                    # check if conf installed
+                    if [ ! -f "$jar_path/$srv-$version.jar.conf" ]; then
+						array[ $i + 1]="$srv-$version.jar.conf (jar existing)"
+						array[ ($i + 2) ]=on
+					else
+						array[ $i + 1]="$srv-$version.jar.conf (jar & conf existing)"
+						array[ ($i + 2) ]=off
+					fi
+				fi
+			fi
             (( i=($i+3) ))
         done
 
@@ -326,7 +344,7 @@ install_choosed_versions(){
             if [[ "$server" == "custom" ]]; then
                 wgetOut=$(wget -N -P $jar_path "$installer_url/$conf_path/$server/$version.jar.conf" 2>&1)
                 chownOut=$(sudo chown $user "$jar_path/$version.jar.conf" 2>&1)
-                chmodOut=$(sudo chmod $rights "$jar_path/$$version.jar.conf" 2>&1)
+                chmodOut=$(sudo chmod $rights "$jar_path/$version.jar.conf" 2>&1)
                 log INFO "WGET: --> $wgetOut" "$output"
                 log INFO "CHOWN: --> $chownOut" "$output"
                 log INFO "CHMOD: --> $chmodOut" "$output"
