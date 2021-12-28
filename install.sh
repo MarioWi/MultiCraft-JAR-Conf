@@ -42,15 +42,15 @@ run() {
 
     check-file "update.sh"
 
-    log INFO "CHOOSE SERVER" "$output"
-    dialog-choose-server srv
-    choicesSrv=$(cat srv) && rm srv
+    log INFO "CHOOSE API" "$output"
+    dialog-choose-api api
+    choicesAPI=$(cat api) && rm api
 
-    log INFO "SERVER CHOOSEN: $choicesSrv" "$output"
-    servers="$(extract-choosed-servers "$choicesSrv" "versions.csv")"
+    log INFO "API CHOOSEN: $choicesAPI" "$output"
+    APIs="$(extract-choosed-APIs "$choicesAPI" "versions.csv")"
 
     log INFO "CHOOSE VERSIONS" "$output"
-    dialog-choose-versions "vers" "$choicesSrv" "$servers"
+    dialog-choose-versions "vers" "$choicesAPI" "$APIs"
 
     extract-choosed-versions "versions.csv" "choosedVersions.csv"
 
@@ -117,26 +117,26 @@ dialog-welcome() {
     dialog --backtitle "Multicraft - JAR Config" --title "Welcome!" --msgbox "Welcome to the Multicraft JAR-Conf downloader.\n" 10 60
 }
 
-dialog-choose-server(){
+dialog-choose-api(){
     local file=${1:?}
 
-    server=(
+    apis=(
         "vanilla" "Vanilla" on
         "spigot" "Spigot" on
         "paperspigot" "PaperSpigot" on
         "custom" "Custom" off)
 
-    dialog --backtitle "Multicraft - JAR Config" --title "Choose Server" --checklist "You can now choose the groups of Server/APIs you want to install, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${server[@]}" 2> "$file"
+    dialog --backtitle "Multicraft - JAR Config" --title "Choose API" --checklist "You can now choose the groups of APIs you want to install, according to your CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${apis[@]}" 2> "$file"
 
     exitstatus=$?
     if [ ! $exitstatus = 0 ]; then
-        log INFO "CANCELD CHOOSE SERVER" "$output"
+        log INFO "CANCELD CHOOSE API" "$output"
         cleanup
         exit 1
     fi
 }
 
-extract-choosed-servers(){
+extract-choosed-APIs(){
     local -r choices=${1:?}
     local -r versions_path=${2:?}
 
@@ -149,21 +149,21 @@ extract-choosed-servers(){
 dialog-choose-versions(){
     local file="${1:?}"
     local -r choices="${2:?}"
-    local -r servers="${3:?}"
+    local -r APIs="${3:?}"
 
     array=()
 
-    for srv in $choices; do
+    for api in $choices; do
         unset array[@]
         i=1 #Index counter for adding to array
 
-        selection="^$(echo $srv | sed -e 's/ /,|^/g'),"
-        lines=$(echo "$servers" | grep -w "$srv")
+        selection="^$(echo $api | sed -e 's/ /,|^/g'),"
+        lines=$(echo "$APIs" | grep -w "$api")
         for k in $lines; do
             version=$(echo $k | awk -F ',' '{print $2;}')
             array[ $i ]=$version
-            # check if custom server
-            if [[ "$srv" == "custom" ]]; then
+            # check if custom API
+            if [[ "$api" == "custom" ]]; then
                 # check if jar installed
                 if [ ! -f "$jar_path/$version.jar" ]; then
                     # check if conf installed
@@ -186,22 +186,22 @@ dialog-choose-versions(){
 				fi
 			else
                 # check if jar installed
-                if [ ! -f "$jar_path/$srv-$version.jar" ]; then
+                if [ ! -f "$jar_path/$api-$version.jar" ]; then
                     # check if conf installed
-                    if [ ! -f "$jar_path/$srv-$version.jar.conf" ]; then
-						array[ $i + 1]=$srv-$version.jar.conf
+                    if [ ! -f "$jar_path/$api-$version.jar.conf" ]; then
+						array[ $i + 1]=$api-$version.jar.conf
 						array[ ($i + 2) ]=off
 					else
-						array[ $i + 1]="$srv-$version.jar.conf (conf existing)"
+						array[ $i + 1]="$api-$version.jar.conf (conf existing)"
 						array[ ($i + 2) ]=off
 					fi
 				else
                     # check if conf installed
-                    if [ ! -f "$jar_path/$srv-$version.jar.conf" ]; then
-						array[ $i + 1]="$srv-$version.jar.conf (jar existing)"
+                    if [ ! -f "$jar_path/$api-$version.jar.conf" ]; then
+						array[ $i + 1]="$api-$version.jar.conf (jar existing)"
 						array[ ($i + 2) ]=on
 					else
-						array[ $i + 1]="$srv-$version.jar.conf (jar & conf existing)"
+						array[ $i + 1]="$api-$version.jar.conf (jar & conf existing)"
 						array[ ($i + 2) ]=off
 					fi
 				fi
@@ -209,13 +209,13 @@ dialog-choose-versions(){
             (( i=($i+3) ))
         done
 
-        dialog --backtitle "Multicraft - JAR Config" --title "Choose Version for $srv" --checklist "You can now choose the groups of Versions you want to install for $srv, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${array[@]}" 2> "$srv"
-        versions=$(cat $srv)
+        dialog --backtitle "Multicraft - JAR Config" --title "Choose Version for $api" --checklist "You can now choose the groups of Versions you want to install for $api, according to your own CSV file.\n\nPress SPACE to select and ENTER to validate your choices." 0 0 0 "${array[@]}" 2> "$api"
+        versions=$(cat $api)
         if [ "$versions" = "" ]; then
-            rm $srv
+            rm $api
         fi
 
-        log INFO "VERSIONS CHOOSEN FOR: $srv" "$output"
+        log INFO "VERSIONS CHOOSEN FOR: $api" "$output"
 
         exitstatus=$?
         if [ ! $exitstatus = 0 ]; then
@@ -231,20 +231,20 @@ extract-choosed-versions(){
     local -r versions_path=${1:?}
     local file="${2:?}"
 
-    for servers in $listServer; do
+    for APIs in $listAPI; do
 
-        if test -f "$servers"; then
-            for server in servers; do
-                versions=$(cat  $servers)
+        if test -f "$APIs"; then
+            for server in APIs; do
+                versions=$(cat  $APIs)
 
-                selectionSrv="^$(echo $servers | sed -e 's/ /,|^/g'),"
-                linesSrv=$(grep -E "$selectionSrv" "$versions_path")
+                selectionAPI="^$(echo $APIs | sed -e 's/ /,|^/g'),"
+                linesAPI=$(grep -E "$selectionAPI" "$versions_path")
 
                 selectionVers="$(echo $versions | sed -e 's/ /,|/g'),"
-                linesVers=$(echo "$linesSrv" | grep -E "$selectionVers")
+                linesVers=$(echo "$linesAPI" | grep -E "$selectionVers")
                 echo "$linesVers" >> $file
 
-                rm $servers
+                rm $APIs
             done
         fi
     done
@@ -394,9 +394,9 @@ install_choosed_versions(){
         else
             fake_install "$server-$version.jar.conf"
         fi
-    done < "$versions"
-    # to IGNORE HEADER LINE comment above line and uncomment lower line
-    #done < <(tail -n +2 $versions)
+    # no headerline in versions.csv
+    # done < "$versions"
+    done < <(tail -n +2 $versions)
 }
 
 fake-install() {
