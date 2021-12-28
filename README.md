@@ -1,3 +1,7 @@
+1. `curl` the first script `install_sys.sh` (`curl -LO https://raw.githubusercontent.com/MarioWi/MultiCraft-JAR-Conf/master/install.sh && sh install.sh`)
+2. Change the function `url_installer` in the file if you want to.
+3. Launch it.
+
 MultiCraft-JAR Conf
 =====
 This project has the goal to make some time gains to many of us.     
