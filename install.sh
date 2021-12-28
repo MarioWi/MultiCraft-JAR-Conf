@@ -60,6 +60,8 @@ run() {
     log INFO "CHOOSE RIGHTS" "$output"
     dialog-choose-rights "rights"
 
+    check_log4j_patch
+
     log INFO "INSTALL CHOOSED VERSIONS" "$output"
     dialog-install-confs
     install_choosed_versions "choosedVersions.csv"
@@ -326,6 +328,37 @@ dialog-insert-rights(){
         exit 1
     fi
 
+}
+
+check_log4j_patch(){
+    if [ ! -f "$jar_path/log4j2-17-111.xml" ] || [ ! -f "$jar_path/log4j2-111-116.xml" ]; then
+        dialog --backtitle "Multicraft - JAR Config" --title "log4j - Patch" --yesno "It seems like you don't have the files for the log4j fix.\n\nThis is strongly advised.\n\n\nThis is absolutely necessary for versions between 1.7 and 1.17.\n\nWould you like to copy the files now?" 13 60
+        
+        # Get exit status
+        # 0 means user hit [yes] button.
+        # 1 means user hit [no] button.
+        # 255 means user hit [Esc] key.
+        dialog_status=$?
+
+        case $dialog_status in
+            0)  # copy log4j2-17-111.xml
+                wgetOut=$(wget -N -P $jar_path "$installer_url/$conf_path/log4j-patch/log4j2-17-111.xml" 2>&1)
+                chownOut=$(sudo chown $user "$jar_path/log4j2-17-111.xml" 2>&1)
+                chmodOut=$(sudo chmod $rights "$jar_path/log4j2-17-111.xml" 2>&1)
+                log INFO "WGET: --> $wgetOut" "$output"
+                log INFO "CHOWN: --> $chownOut" "$output"
+                log INFO "CHMOD: --> $chmodOut" "$output"
+                # copy log4j2-111-116.xml
+                wgetOut=$(wget -N -P $jar_path "$installer_url/$conf_path/log4j-patch/log4j2-111-116.xml" 2>&1)
+                chownOut=$(sudo chown $user "$jar_path/log4j2-111-116.xml" 2>&1)
+                chmodOut=$(sudo chmod $rights "$jar_path/log4j2-111-116.xml" 2>&1)
+                log INFO "WGET: --> $wgetOut" "$output"
+                log INFO "CHOWN: --> $chownOut" "$output"
+                log INFO "CHMOD: --> $chmodOut" "$output";;
+            # 1) echo "no";;
+            # 255) echo "[EXC]";;
+        esac
+    fi
 }
 
 dialog-install-confs() {
