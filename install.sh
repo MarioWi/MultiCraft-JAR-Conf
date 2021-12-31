@@ -372,7 +372,7 @@ install_choosed_versions(){
     user=$(cat user)
     rights=$(cat rights)
 
-    while IFS="," read -r server version java confVersion
+    while IFS="," read -r server version java_version confVersion
     do
         if [ "$dry_run" = false ]; then
             if [[ "$server" == "custom" ]]; then
@@ -383,6 +383,7 @@ install_choosed_versions(){
                 log INFO "CHOWN: --> $chownOut" "$output"
                 log INFO "CHMOD: --> $chmodOut" "$output"
                 sed -i -E "s|^configSource\s=\s(\S*)|configSource = $installer_url/$conf_path/$server/$version.jar.conf|" "$jar_path/$version.jar.conf"
+                sed -i -E "s|^command\s=\s\"{JAVA}\"|command = $java_list[$java_version]/java" "$jar_path/$server-$version.jar.conf"
             else
                 wgetOut=$(wget -N -P $jar_path "$installer_url/$conf_path/$server/$server-$version.jar.conf" 2>&1)
                 chownOut=$(sudo chown $user "$jar_path/$server-$version.jar.conf" 2>&1)
@@ -391,6 +392,7 @@ install_choosed_versions(){
                 log INFO "CHOWN: --> $chownOut" "$output"
                 log INFO "CHMOD: --> $chmodOut" "$output"
                 sed -i -E "s|^configSource\s=\s(\S*)|configSource = $installer_url/$conf_path/$server/$server-$version.jar.conf|" "$jar_path/$server-$version.jar.conf"
+                sed -i -E "s|^command\s=\s\"{JAVA}\"|command = $java_list[$java_version]/java" "$jar_path/$server-$version.jar.conf"
             fi
         else
             fake_install "$server-$version.jar.conf"
